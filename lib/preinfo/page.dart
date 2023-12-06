@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:ico_open/config/config.dart';
@@ -69,10 +70,16 @@ class _MyHomePageState extends State<MyHomePage> {
     email.dispose();
   }
 
-  Future<void> _verifyEmail(String email) async {
+  Future<bool> _verifyEmail(String email) async {
     if (email.isEmpty) {
       log('email is empty', name: _passedVeridateEmail.toString());
       setState(() {
+        _validateEmail = true;
+      });
+    } else if (!EmailValidator.validate(email)) {
+      log('email is invalid', name: _passedVeridateEmail.toString());
+      setState(() {
+        _emailError = 'กรุณาใส่อีเมลให้ถูกต้อง';
         _validateEmail = true;
       });
     } else {
@@ -120,7 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }
     log('is passed email validate: $_passedVeridateEmail');
-    // return _passedVeridateEmail;
+    return _passedVeridateEmail;
   }
 
   Future<bool> _verifyMobileNo(String mobileno) async {
@@ -511,12 +518,12 @@ class _MyHomePageState extends State<MyHomePage> {
                           errorTextMessage: _emailError,
                           subject: 'อีเมล',
                           filterPattern: RegExp(r'[a-zA-Z0-9@.]'),
-                          onsubmittedFunction: (value) {
-                            _verifyEmail(value);
-                            // final isPassed = await _verifyEmail(value);
-                            // setState(() {
-                            //   isPassedEmailChecked = isPassed;
-                            // });
+                          onsubmittedFunction: (value) async {
+                            // _verifyEmail(value);
+                            final isPassed = await _verifyEmail(value);
+                            setState(() {
+                              isPassedEmailChecked = isPassed;
+                            });
                           },
                         ),
                       ),
@@ -620,13 +627,41 @@ class _MyHomePageState extends State<MyHomePage> {
                                   if (ensurname.text.trim().isEmpty) {
                                     _validateEnSurName = true;
                                   }
-                                  // isPassedEmailChecked =
-                                      await _verifyEmail(email.text);
+                                  // var _passEmailChecked =
+                                  //     _verifyEmail(email.text);
 
-                                  // isPassedMobileChecked = 
-                                      await _verifyMobileNo(mobileno.text);
+                                  FutureBuilder(
+                                    future: _verifyEmail(email.text),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.hasData) {
+                                        return const Column();
+                                      } else {
+                                        return const CircularProgressIndicator();
+                                      }
+                                    },
+                                  );
+                                  FutureBuilder(
+                                    future: _verifyMobileNo(mobileno.text),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.hasData) {
+                                        return const Column();
+                                      } else {
+                                        return const CircularProgressIndicator();
+                                      }
+                                    },
+                                  );
+                                  // await _verifyEmail(email.text);
+
+                                  // var _passMobileChecked =
+                                  //     _verifyMobileNo(mobileno.text);
                                   // if (thValue!.isEmpty) {_validateTHTitle = true;}
                                   // if (engValue!.isEmpty) {_validateEnTitle = true;}
+                                  // print(await _passEmailChecked);
+                                  // print(await _passMobileChecked);
+
+                                  log('''title: $thValue name: ${thname.text} surname: ${thsurname.text}
+                                    title: $engValue name: ${enname.text} surname: ${ensurname.text}
+                                    email: ${email.text}, $isPassedEmailChecked, mobile: ${mobileno.text}, $isPassedMobileChecked, agreement: $isPersonalAgreementChecked''');
 
                                   if (thname.text.trim().isNotEmpty &&
                                       thsurname.text.trim().isNotEmpty &&
@@ -635,13 +670,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                       email.text.trim().isNotEmpty &&
                                       mobileno.text.trim().isNotEmpty &&
                                       // isPersonalAgreementChecked) {
-                                        isPersonalAgreementChecked &&
-                                    // _passedVeridateEmail && _passedVeridateMobile) {
-                                    isPassedEmailChecked && isPassedMobileChecked) {
-                                    log('''title: $thValue name: ${thname.text} surname: ${thsurname.text}
-                                    title: $engValue name: ${enname.text} surname: ${ensurname.text}
-                                    email: ${email.text}, mobile: ${mobileno.text}, agreement: $isPersonalAgreementChecked''');
-
+                                      isPersonalAgreementChecked &&
+                                      // _passedVeridateEmail && _passedVeridateMobile) {
+                                      isPassedEmailChecked &&
+                                      isPassedMobileChecked) {
                                     gotoNextPage();
                                   }
                                 },
